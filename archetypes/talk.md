@@ -24,3 +24,9 @@ image = ""
 caption = ""
 
 +++
+
+Intro serves as summary
+
+<!--more-->
+
+Rest of the post.
