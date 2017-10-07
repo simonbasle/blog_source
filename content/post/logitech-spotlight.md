@@ -1,7 +1,7 @@
 +++
 title = "New Gadget: Logitech Spotlight"
 date = 2017-10-06T17:31:42+02:00
-draft = true
+draft = false
 #notonhomepage = true
 
 # Tags and categories
@@ -29,11 +29,11 @@ After all, you've _got_ to make use of the whole space, move back and forth...
 It keeps the presentation dynamic :+1:
 
 {{% alert note %}}
-By the way, if you ever recognize me at a conference, don't hesitate: please
-come and say Hi!
+By the way, if you ever see me at a conference, don't hesitate: please come and
+say Hi!
 {{% /alert %}}
 
-So for a few years now, I've had a solid R600 by Logitech. But recently, I
+So for a few years now, I've had a solid R800 by Logitech. But recently, I
 discovered they released an even higher end remote that goes beyond the
 traditional 2-buttons-to-advance-slides set of features: **Enter the Logitech
 Spotlight** :flashlight:
@@ -55,8 +55,8 @@ pointer. And the best part is, the remote has an accelerometer, so you can
 
 This really feels like having a torchlight you can use to show specific parts of
 your slides. And since it's all in the software, it displays on the projector
-and will show up in videos that captured your screen (including webinars for
-instance).
+and it will also show up in videos when your screen gets captured (or when
+sharing your screen during webinars for instance).
 
 {{< figure src="/img/logitech-spotlight-in-action.png" title="Yes, even screenshots!" >}}
 
