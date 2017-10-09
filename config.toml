@@ -100,7 +100,7 @@ defaultContentLanguageInSubdir = false
   #   https://sourcethemes.com/academic/post/writing-markdown-latex/#highlighting-options
   highlight = true
   highlight_languages = [ ]
-  highlight_style = "solarized-dark"
+  highlight_style = "monokai"
 
   # Enable native social sharing buttons?
   sharing = true
