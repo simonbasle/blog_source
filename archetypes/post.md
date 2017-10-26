@@ -15,6 +15,17 @@ categories = []
 image = ""
 caption = "[Short Title :link:](https://commons.wikimedia.org 'Attribution')"
 
+
+# Useful shortcodes:
+# {{% toc%}}
+# {{% alert note %}} ... {{% /alert %}}
+# {{% alert warning %}} ... {{% /alert %}}
+# {{< figure src="/img/foo.png" title="Foo!" >}}
+# {{< tweet 666616452582129664 >}}
+# {{< gist USERNAME GIST-ID  >}}
+# {{< speakerdeck 4e8126e72d853c0060001f97 >}}
+
+# Footnotes: [^1] and [^1]: Footnote example.
 +++
 
 Intro serves as summary
