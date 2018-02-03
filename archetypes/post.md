@@ -26,6 +26,9 @@ caption = "[Short Title :link:](https://commons.wikimedia.org 'Attribution')"
 # {{< speakerdeck 4e8126e72d853c0060001f97 >}}
 
 # Footnotes: [^1] and [^1]: Footnote example.
+
+# You can also use ASCIIDOC! Add the frontmatter below in the body to activate code callouts
+# :icons: font
 +++
 
 Intro serves as summary
