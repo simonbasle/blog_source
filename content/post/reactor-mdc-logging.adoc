@@ -19,6 +19,8 @@ a reactive application.
 
 <!--more-->
 
+_:warning: *update*: see the bottom note for a bug with doOnEach to be aware of in `3.1.3.RELEASE` and below_
+
 ## The need
 
 Let's imagine that we have an API that lists restaurants in your area, under a requested price.
@@ -189,3 +191,10 @@ And _voilà_ the result:
 
 Results from two requests interleaved in logs from the same `Thread`, but we can
 still identify who got what. *WIN* :grin:
+
+{{% alert warning %}}
+Following the writing of this post, an issue with `doOnEach` was discovered that leads to the
+operator being bypassed in some configurations (asynchronous fusion). This will be fixed in
+`3.1.4.RELEASE`, and in the meantime you can put a `.hide()` just *before* the `.doOnEach(...)`.
+See https://github.com/reactor/reactor-core/issues/1056
+{{% /alert %}}
