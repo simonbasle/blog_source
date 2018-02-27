@@ -1,6 +1,7 @@
 +++
 title = "Contextual Logging with Reactor Context and MDC"
 date = 2018-02-03T15:34:30+01:00
+lastmod = 2018-02-27T19:30:00+01:00
 draft = false
 
 tags = ["Reactor","Context","Logging","MDC"]
@@ -118,20 +119,23 @@ What's more interesting is that since version `3.1.3`, it also provides access
 to the current `Context` :+1: :tada:
 
 So the idea would be to isolate log statements in `doOnEach` and write a bit of
-boilerplate code to fill the MDC, do the logging and clear the MDC (we want to be
+boilerplate code footnote:[Credit to Taylor Gautier on the Reactor Gitter channel for the improved helper signature :+1:]
+to fill the MDC, do the logging and clear the MDC (we want to be
 good citizens here):
 
 [source,java]
 ----
-private static <T> void logOnNext(Signal<T> signal, Consumer<T> logStatement) {
-	if (!signal.isOnNext()) return; <1>
-	Optional<String> apiIDMaybe = signal.getContext().getOrEmpty("apiID"); <2>
+private static <T> Consumer<Signal<T>> logOnNext(Consumer<T> logStatement) {
+  return signal -> {
+	  if (!signal.isOnNext()) return; <1>
+	    Optional<String> apiIDMaybe = signal.getContext().getOrEmpty("apiID"); <2>
 
-	apiIDMaybe.ifPresentOrElse(apiID -> {
-		try (MDC.MDCCloseable closeable = MDC.putCloseable("apiID", apiID)) { <3>
-			logStatement.accept(signal.get()); <4>
-		}
-	}, () -> logStatement.accept(signal.get())); <4>
+	    apiIDMaybe.ifPresentOrElse(apiID -> {
+		  try (MDC.MDCCloseable closeable = MDC.putCloseable("apiID", apiID)) { <3>
+			  logStatement.accept(signal.get()); <4>
+		  }
+	  }, () -> logStatement.accept(signal.get())); <4>
+  }
 }
 ----
 <1> We only care to log for onNext events
@@ -150,7 +154,7 @@ public Flux<Restaurant> byPrice(@RequestParam Double maxPrice, @RequestHeader(re
 	String apiId = userId == null ? "" : userId;
 	<3>
 	return restaurantService.byPrice(maxPrice))
-	           .doOnEach(sig -> logOnNext(sig, r -> LOG.debug("found restaurant {} for ${}", r.getName(), r.getPricePerPerson()))) <2>
+	           .doOnEach(logOnNext(sig, r -> LOG.debug("found restaurant {} for ${}", r.getName(), r.getPricePerPerson()))) <2>
 	           .subscriberContext(Context.of("apiID", apiId)); <1>
 }
 ----
@@ -167,9 +171,9 @@ then call the `LOG` directly like before, but let's be reactive all the way:
 public Flux<Restaurant> byPrice(@RequestParam Double maxPrice, @RequestHeader(required = false, name = "X-UserId") String userId) {
 	String apiId = userId == null ? "" : userId;
 	return Mono.just(String.format("finding restaurants for under $%.2f for %s", maxPrice, apiId)) <1>
-	           .doOnEach(sig -> logOnNext(sig, msg -> LOG.debug(msg))) <2>
+	           .doOnEach(logOnNext(sig, msg -> LOG.debug(msg))) <2>
 	           .thenMany(restaurantService.byPrice(maxPrice)) <3>
-	           .doOnEach(sig -> logOnNext(sig, r -> LOG.debug("found restaurant {} for ${}", r.getName(), r.getPricePerPerson())))
+	           .doOnEach(logOnNext(sig, r -> LOG.debug("found restaurant {} for ${}", r.getName(), r.getPricePerPerson())))
 	           .subscriberContext(Context.of("apiID", apiId));
 }
 ----
