@@ -37,6 +37,8 @@ In this post, we'll look at a reactive solution for the `Run Length Encoding` pr
 
 The challenge here is to perform it in a Reactive way using Reactor operators. Let's jump in!
 
+_[update 2018-03-13](/2018/03/reactive-runlength-encoding/#preventing-errors-cutting-the-last-run-short): Found a few shortcomings of the first implementation and added two new sections that present alternatives._
+
 <!--more-->
 
 For the reactive version, we'll assume that our input is simply a `Flux<T>` in which some elements can be repeated consecutively.
@@ -188,5 +190,118 @@ public void runLengthEncodingStrings() {
               .verifyComplete();
 }
 ```
+
+But there is a problem with how it deals with errors in the source sequence: it is cutting the last _run_ short due to the error:
+
+```java
+@Test
+public void runLengthEncodingWithError() {
+  Flux<Integer> source = Flux.just(1, 1, 1, 2, 3, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+    .concatWith(Mono.error(new IllegalStateException("boom")));
+
+  Flux<Tuple2<Integer, Integer>> runLength = runLength(partitionBySameValue(source), 0);
+
+  StepVerifier.create(runLength.map(t2 -> t2.getT1() + "->" + t2.getT2()))
+              .expectNext("1->3","2->1","3->1","2->2","1->10")
+              .verifyErrorMessage("boom");
+}
+```
+
+(note we also removed the `string` method, since it was also using `reduce`, failing fast on error)
+
+Maybe we can find an even better implementation?
+
+# Preventing errors cutting the last _run_ short
+
+In order to avoid the error-cutting-short issue, we need to suppress the error inside the window.
+The main `window` operator will still notify the `flatMap` coordinator separately, so we'll still ultimately be notified of the error.
+The Reactor reference guide indicates that the catch-and-swallow imperative pattern can be translated into `.onErrorResume(t -> Mono.empty())` in reactive style, so we could try that.
+
+The only problem is that this suppression must be performed mid-reduction, and `reduce` will unfortunately short-circuit and prevent us from recovering the last intermediate step.
+
+Thinking about intermediate steps could point us in the direction of `scan`, which is a `reduce` that also emits intermediate results of the reduction.
+We could suppress errors inside the `scan` and apply `takeLast(1)` to emit the last available intermediate result (or the final result if everything went well).
+
+Let's see how this changes our `runLength` method:
+
+```java
+public <T> Flux<Tuple2<T, Integer>> runLength(Flux<Flux<T>> partitions,
+    T neutralElement) {
+  return partitions
+    .flatMap(window -> window
+      //we use scan and takeLast(1) to keep the state in case of error
+      .scan(
+        Tuples.of(neutralElement, 0),
+        (state, next) -> Tuples.of(next, state.getT2() + 1)
+      )
+      //window will also signal the flatMap coordinator, so we must ignore errors here
+      .onErrorResume(t -> Mono.empty())
+      //as a result, the last step of the run count reduction is still visible and we can emit it 
+      .takeLast(1)
+    )
+    .filter(t -> t.getT2() > 0); // window produces an empty first window
+}
+```
+
+However, the solution at this point is getting a bit too convoluted to my taste :disappointed:
+
+My colleague [@glynnormington](https://twitter.com/glynnormington) (who first discovered the error issue, kudos) was talking about how it looked like we'd need something similar to Haskell's `takeWhile`.
+That indeed resonated with me :bulb:
+
+# Using a window variant and **per-Subscriber** state
+
+Turns out there is a variant of `window` that resembles `takeWhile`: `windowUntil` (note: we also have a `takeWhile` operator).
+
+In that variant, we provide a `Predicate` and as soon as it matches, the operator opens a new window.
+It can also be configured to include the matching element in the previous window (at the end) or in the new one (at the beginning).
+
+In our case, we'd like to cut the window **before** the matching value (aka the first element that differs from the current _run_).
+
+The only thing we need to solve is the state: how to keep track of the current _run_ value?
+Having an `AtomicReference<T>` as state would be a pragmatic solution: despite feeling a bit less clean than with vanilla operators, it would allow for atomic state updates.
+
+But an important principle to follow is **not to share the state between subscriptions**.
+
+We could create a new `AtomicReference<T>` state for each subscription by using `compose`.
+
+This actually allows us to do the windowing AND reduction in one pass, getting rid of the `publish` and the neutral element in the process :+1:
+
+This brings the total amount of code down quite a bit:
+
+```java
+public static <T> Flux<Tuple2<T, Integer>> partitionAndRunLength(Flux<T> input) {
+  return input.compose(source -> {
+    AtomicReference<T> last = new AtomicReference<>(null);
+    return source
+      .windowUntil(i -> !i.equals(last.getAndSet(i)), true) //cutBefore = true
+      .filter(it -> last.get() != null) //eliminate first empty window
+      .flatMap(run ->
+        Mono.just(last.get()) //start tuple with runValue
+            .zipWith(run
+              .onErrorResume(t -> Mono.empty()) //suppress inner errors
+              .count() //count the run length
+              .map(Number::intValue) //convert it to int
+      ))
+  });
+}
+```
+
+The test now only needs to use `partitionAndRunLength`:
+
+```java
+@Test
+public void runLengthEncodingWithError() {
+  Flux<Integer> source = Flux.just(1, 1, 1, 2, 3, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+   .concatWith(Mono.error(new IllegalStateException("boom")));
+
+  Flux<Tuple2<Integer, Integer>> runLength = partitionAndRunLength(source); //simpler invocation
+
+  StepVerifier.create(runLength.map(t2 -> t2.getT1() + "->" + t2.getT2()))
+    .expectNext("1->3","2->1","3->1","2->2","1->10")
+    .verifyErrorMessage("boom");
+}
+```
+
+And voilà! We solved our problem :tada:
 
 ![](https://media.giphy.com/media/BxWTWalKTUAdq/giphy.gif)
