@@ -19,4 +19,4 @@ caption = "Reactor Logo :smile:"
 
 +++
 
-{{< speakerdeck c951cd4d8e954ef58e62d16ad428b415 >}}
+<script async class="speakerdeck-embed" data-id="c951cd4d8e954ef58e62d16ad428b415" data-ratio="1.77777777777778" src="//speakerdeck.com/assets/embed.js"></script>

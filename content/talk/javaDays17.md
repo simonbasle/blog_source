@@ -11,7 +11,7 @@ location = "Kiev, Ukraine"
 
 selected = false
 math = false
-highlight = true
+highlight = false
 
 url_pdf = ""
 url_slides = ""

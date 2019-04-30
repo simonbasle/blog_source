@@ -11,7 +11,7 @@ location = "Lyon, France"
 
 selected = true
 math = false
-highlight = true
+highlight = false
 
 url_pdf = ""
 url_slides = "https://speakerdeck.com/simonbasle/how-to-start-contributing-to-open-source"
@@ -25,4 +25,4 @@ caption = ""
 
 +++
 
-{{< speakerdeck e1be5fde4da24713a37fcb836d76f03d >}}
+<script async class="speakerdeck-embed" data-id="e1be5fde4da24713a37fcb836d76f03d" data-ratio="1.77777777777778" src="//speakerdeck.com/assets/embed.js"></script>

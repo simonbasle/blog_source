@@ -11,7 +11,7 @@ location = "San Francisco, USA"
 
 selected = false
 math = false
-highlight = true
+highlight = false
 
 url_pdf = ""
 url_slides = ""
